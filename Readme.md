@@ -218,6 +218,34 @@ Rotates the image one of `90`, `180` or `270` degrees.
 [:rotate 90]
 ```
 
+### Fit
+
+Fits the image within a frame, maintaining aspect ratio, cropping the image if
+necessary. By default does not scale images up, so if the image is too small to
+fit, it will at least not overflow the specified dimensions.
+
+The fit filter works by first scaling the image down to fit the shorter side in
+the specified frame. It is then cropped, if necessary to fit in the other
+direction. The default is to crop to the center, but this behavior can be
+influenced if desired.
+
+```clj
+[:fit {:width 400 :height 200}]
+```
+
+If this transformation is applied to an image that is 1000x800 pixels:
+
+- It is first scaled down to 400x320
+- It is then cropped vertically with a Y offset of 60px
+
+Options:
+
+- `:width` - The desired width of the image
+- `:height` - The desired height of the image
+- `:offset-y` - Any of the values supported by `:crop`, default `:center`
+- `:offset-x` - Any of the values supported by `:crop`, default `:center`
+- `:scale-up?` - If set to `true`, allow the image to be scaled up, if necessary
+
 ### Resize
 
 Resizes the image. Only use this transform if you need to resize the image

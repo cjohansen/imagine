@@ -66,13 +66,15 @@
         (resolve-offset :offset-x w :width [:left :center :right])
         (resolve-offset :offset-y h :height [:top :center :bottom]))))
 
+(defn- crop [image {:keys [width height offset-x offset-y]}]
+  (collage/crop image offset-x offset-y width height))
+
 (defmethod transform :crop [_ image opts]
   (when-not (map? opts)
     (if (= :square opts)
       (throw (Exception. (format "Crop expects a map of options. To square an image, do [:crop {:preset :square}]")))
       (throw (Exception. (format "Crop expects a map of options {:preset :width :height :offset-x :offset-y}")))))
-  (let [{:keys [width height offset-x offset-y]} (crop-params image opts)]
-    (collage/crop image offset-x offset-y width height)))
+  (crop image (crop-params image opts)))
 
 (defmethod transform :triangle [_ image position]
   (when-not (keyword? position)
@@ -81,7 +83,7 @@
 
 (defmethod transform :circle [_ image & [position]]
   (when position
-    (throw (Exception. (format "Circle does not yet implement its position argument"))))
+    (throw (Exception. "Circle does not yet implement its position argument")))
   ;; position not yet implemented
   (collage/circle image))
 
@@ -105,9 +107,78 @@
          :width (int (* (/ w h) (:smallest opt)))}))
     opt))
 
+(defn- resize [image {:keys [width height]}]
+  (collage/resize image :width width :height height))
+
 (defmethod transform :resize [_ image opt]
-  (let [{:keys [width height]} (resize-params image opt)]
-    (collage/resize image :width width :height height)))
+  (resize (resize-params image opt)))
+
+(defn- fit-resize-params-1 [img-ratio frame-ratio width height]
+  (cond
+    ;; Aspect ratio unchanged
+    (= img-ratio frame-ratio)
+    {:width width
+     :height height}
+
+    ;; Square images
+    (= 1 img-ratio)
+    (let [dim (max width height)]
+      {:width dim :height dim})
+
+    ;; Wide image, wide frame
+    (and (< 1 img-ratio)
+         (< 1 frame-ratio))
+    {:height (int (* img-ratio width)) :width width}
+
+    ;; Wide image, tall or square frame
+    (< 1 img-ratio)
+    {:width (int (* img-ratio height)) :height height}
+
+    ;; Tall image, tall
+    (and (< img-ratio 1)
+         (< frame-ratio 1))
+    {:width (int (* img-ratio height)) :height height}
+
+    ;; Tall image, wide or square frame
+    :default
+    {:width width :height (int (/ width img-ratio))}))
+
+(defn fit-resize-params [^BufferedImage image {:keys [width height scale-up?]}]
+  (let [w (.getWidth image)
+        h (.getHeight image)
+        params (fit-resize-params-1 (/ w h) (/ width height) width height)]
+    (cond
+      (and (= w (:width params))
+           (= h (:height params))) nil
+
+      (or scale-up?
+          (and (<= (:width params) w)
+               (<= (:height params) h)))
+      params
+
+      :default nil)))
+
+(defn fit-crop-params [^BufferedImage image {:keys [width height offset-y offset-x]}]
+  (let [w (.getWidth image)
+        h (.getHeight image)]
+    (if (and (= w width) (= h height))
+      nil
+      (crop-params image {:width width
+                          :height height
+                          :offset-y (or offset-y :center)
+                          :offset-x (or offset-x :center)}))))
+
+(defmethod transform :fit [_ image opt]
+  (when-not (map? opt)
+    (throw (Exception. "Fit requires a map of options")))
+  (when (or (nil? (:width opt))
+            (nil? (:height opt)))
+    (throw (Exception. "Fit requires both a width and a height")))
+  (let [resize-params (fit-resize-params image opt)
+        image (if resize-params (resize image resize-params) image)]
+    (if-let [crop-params (fit-crop-params image opt)]
+      (crop image crop-params)
+      image)))
 
 (defmethod transform :scale [_ image s]
   (collage/scale image s))
@@ -198,7 +269,8 @@
   (cond-> transformation
     (:width transformation) (update :width * 2)
     (:height transformation) (update :height * 2)
-    (< 200 (:width transformation)) (assoc :progressive true)
+    (< 200 (or (:width transformation)
+               (:height transformation))) (assoc :progressive true)
     :always (assoc :quality 0.3)))
 
 (defn inflate-spec

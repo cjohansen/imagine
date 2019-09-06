@@ -52,6 +52,87 @@
           :offset-x 100
           :offset-y 700})))
 
+(deftest fit-resize-params-same-ratio-test
+  (is (= (sut/fit-resize-params (image 1000 800) {:width 500 :height 400})
+         {:width 500
+          :height 400}))
+
+  (is (nil? (sut/fit-resize-params (image 1000 800) {:width 1000 :height 800})))
+  (is (nil? (sut/fit-resize-params (image 1000 800) {:width 2000 :height 1600})))
+
+  (is (= (sut/fit-resize-params (image 1000 800) {:width 2000 :height 1600 :scale-up? true})
+         {:width 2000
+          :height 1600})))
+
+(deftest fit-resize-params-square-image-test
+  (is (= (sut/fit-resize-params (image 1000 1000) {:width 500 :height 400})
+         {:width 500
+          :height 500}))
+
+  (is (= (sut/fit-resize-params (image 1000 1000) {:width 400 :height 500})
+         {:width 500
+          :height 500}))
+
+  (is (nil? (sut/fit-resize-params (image 1000 1000) {:width 1600 :height 2000})))
+
+  (is (= (sut/fit-resize-params (image 1000 1000) {:width 1600 :height 2000 :scale-up? true})
+         {:width 2000
+          :height 2000})))
+
+(deftest fit-resize-params-wide-image-test
+  (is (= (sut/fit-resize-params (image 1000 800) {:width 500 :height 500})
+         {:width 625
+          :height 500}))
+
+  (is (= (sut/fit-resize-params (image 1000 800) {:width 500 :height 250})
+         {:width 500
+          :height 625}))
+
+  (is (= (sut/fit-resize-params (image 1000 800) {:width 250 :height 500})
+         {:width 625
+          :height 500}))
+
+  (is (nil? (sut/fit-resize-params (image 1000 800) {:width 1500 :height 1000})))
+
+  (is (= (sut/fit-resize-params (image 1000 800) {:width 1500 :height 1000 :scale-up? true})
+         {:width 1500
+          :height 1875})))
+
+(deftest fit-resize-params-tall-image-test
+  (is (= (sut/fit-resize-params (image 800 1000) {:width 500 :height 500})
+         {:width 500
+          :height 625}))
+
+  (is (= (sut/fit-resize-params (image 800 1000) {:width 500 :height 250})
+         {:width 500
+          :height 625}))
+
+  (is (= (sut/fit-resize-params (image 800 1000) {:width 250 :height 500})
+         {:width 400
+          :height 500}))
+
+  (is (nil? (sut/fit-resize-params (image 800 1000) {:width 1200 :height 500})))
+
+  (is (= (sut/fit-resize-params (image 800 1000) {:width 1200 :height 500 :scale-up? true})
+         {:width 1200
+          :height 1500})))
+
+(deftest fit-crop-params-fitting-image-test
+  (is (nil? (sut/fit-crop-params (image 1000 800) {:width 1000 :height 800}))))
+
+(deftest fit-crop-params-square-image-test
+  (is (= (sut/fit-crop-params (image 800 800) {:width 800 :height 600})
+         {:width 800
+          :height 600
+          :offset-y 100
+          :offset-x 0}))
+
+  (is (= (sut/fit-crop-params (image 800 800) {:width 800 :height 600 :offset-y :bottom})
+         {:width 800
+          :height 600
+          :offset-y 200
+          :offset-x 0})))
+
 (deftest content-hash-test-should-be-idempotent
   (is (= (sut/content-hash "image-1.jpg" :green-circle config)
          (sut/content-hash "image-1.jpg" :green-circle config))))
