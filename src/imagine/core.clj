@@ -94,8 +94,20 @@
 (defmethod transform :rotate [_ image theta]
   (collage/rotate image theta))
 
-(defmethod transform :resize [_ image {:keys [width height]}]
-  (collage/resize image :width width :height height))
+(defn resize-params [^BufferedImage image opt]
+  (if (:smallest opt)
+    (let [w (.getWidth image)
+          h (.getHeight image)]
+      (if (< w h)
+        {:width (:smallest opt)
+         :height (int (* (/ h w) (:smallest opt)))}
+        {:height (:smallest opt)
+         :width (int (* (/ w h) (:smallest opt)))}))
+    opt))
+
+(defmethod transform :resize [_ image opt]
+  (let [{:keys [width height]} (resize-params image opt)]
+    (collage/resize image :width width :height height)))
 
 (defmethod transform :scale [_ image s]
   (collage/scale image s))

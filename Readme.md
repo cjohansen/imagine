@@ -229,6 +229,8 @@ argument:
   maintained, and `:width` is calculated from `:height`
 - `:height` - The height to resize to. If not set, aspect ratio will be
   maintained, and `:height` is calculated from `:width`
+- `:smallest` - Maintains aspect ratio and resizes the image so that the
+  smallest dimension (either `:width` or `:height`) measures this many pixels.
 
 If neither `:width` nor `:height` is set, an exception is thrown.
 
