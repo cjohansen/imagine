@@ -187,7 +187,7 @@
       (when (and (nil? jpg-file) (nil? png-file))
         (throw (Exception. (format "Found neither %s.jpg nor %s.png, unable to select input." path path))))
       (let [spec (merge (if (and (= :jpg ext) retina-optimized?)
-                          transformation
+                          (prepare-jpg-for-retina transformation)
                           transformation)
                         {:ext ext
                          :resource (or jpg-file png-file)})]
