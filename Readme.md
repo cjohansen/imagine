@@ -8,12 +8,24 @@ to disk.
 chain content, making it ideal for serving with a far future expires header,
 ideal for client-side caching and a high-performant site.
 
+Install with tools.deps:
+
+```clj
+cjohansen/imagine {:mvn/version "2019.09.06"}
+```
+
+Install with Leiningen:
+
+```clj
+[cjohansen/imagine "2019.09.06"]
+```
+
 ## Using with Ring
 
 `imagine` gives you a Ring middleware to
 
 ```clj
-(require '[imagine.core :as imgeng])
+(require '[imagine.core :as imagine])
 
 (def image-asset-config
   {:url-prefix "images"
@@ -21,23 +33,25 @@ ideal for client-side caching and a high-performant site.
    :transformations
    {:small-circle [[:crop {:width 200 :height 200}]
                    [:circle]]
-    :red-green [[:duotone {:from [255 0 0] :to [0 255 0]}]]
-    :bw-thumb [[:resize {:width 90}]
-               [:grayscale]]}})
+
+    :red-green    [[:duotone {:from [255 0 0] :to [0 255 0]}]]
+
+    :bw-thumb     [[:resize {:width 90}]
+                   [:grayscale]]}})
 
 (def handler
   (-> app
-      (imgeng/wrap-images image-asset-config)))
+      (imagine/wrap-images image-asset-config)))
 ```
 
 With the middleware in place, any request to `/images/*` will be handled by the
-image engine. Specifically, a URL like `/images/red-green/ab6ab67c/gal.jpg` will
-serve up the resource `photos/gal.jpg` with a red-to-green duotone filter.
+image engine. Specifically, a URL like `/images/red-green/ab6ab67c/bird.jpg` will
+serve up the resource `photos/bird.jpg` with a red-to-green duotone filter.
 
 A link to this image can be created with:
 
 ```clj
-(imgeng/url image-asset-config :red-green "/photos/gal.jpg")
+(imagine/url image-asset-config :red-green "/photos/bird.jpg")
 ```
 
 ## Using with static sites
@@ -50,18 +64,13 @@ in, the following snippet will provide you with all the images you need:
 ```clj
 (require '[imagine.core :as imagine])
 
-(imagine/export-images image-asset-config dir images)
-```
+(def dir "build")
 
-Even better, `imagine` can find the images to generate for you. Given a
-directory of static HTML files, it can look through them, find all the image
-tags, filter out the relevant image links and generate them all to disk for you:
-
-```clj
-(require '[imagine.core :as imagine])
-
-(let [images (imagine/find-images image-asset-config "path/to/static/site")]
-  (imagine/export-images image-asset-config dir images))
+(doseq [image images]
+  (-> image
+      imagine/image-spec
+      (imagine/inflate-spec image-asset-config)
+      (imagine/transform-image-to-file (str dir image))))
 ```
 
 ## Configuration
