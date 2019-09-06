@@ -55,7 +55,7 @@
     (throw (Exception. (format "Triangle expects a keyword position: [:triangle :lower-left]. Choose from #{:lower-left :lower-right :upper-left :upper-right}"))))
   (collage/triangle image position))
 
-(defmethod transform :circle [_ image position]
+(defmethod transform :circle [_ image & [position]]
   (when position
     (throw (Exception. (format "Circle does not yet implement its position argument"))))
   ;; position not yet implemented
