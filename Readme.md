@@ -11,13 +11,13 @@ ideal for client-side caching and a high-performant site.
 Install with tools.deps:
 
 ```clj
-cjohansen/imagine {:mvn/version "2019.09.07"}
+cjohansen/imagine {:mvn/version "2019.09.08"}
 ```
 
 Install with Leiningen:
 
 ```clj
-[cjohansen/imagine "2019.09.07"]
+[cjohansen/imagine "2019.09.08"]
 ```
 
 ## Using with Ring
