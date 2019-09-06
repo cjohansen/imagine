@@ -51,7 +51,7 @@
     (collage/crop image offset-x offset-y width height)))
 
 (defmethod transform :triangle [_ image position]
-  (when-not (keyword? opts)
+  (when-not (keyword? position)
     (throw (Exception. (format "Triangle expects a keyword position: [:triangle :lower-left]. Choose from #{:lower-left :lower-right :upper-left :upper-right}"))))
   (collage/triangle image position))
 
