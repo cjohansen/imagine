@@ -171,13 +171,13 @@
   transformation."
   [spec config]
   (let [{:keys [transform filename ext url]} spec
-        {:keys [transformations retina-optimized? resource-path width height]} config
+        {:keys [transformations resource-path]} config
         transformation (get transformations transform)]
     (when (nil? transformation)
       (throw (Exception. (format "Unknown transform \"%s\" in URL \"%s\", use one of %s" transform url (keys transformations)))))
     (when-not (contains? #{:png :jpg} ext)
       (throw (Exception. (format "Unknown extension \"%s\" in URL \"%s\", use png or jpg" ext url))))
-    (when (and (nil? width) (nil? height) retina-optimized?)
+    (when (and (nil? (:width transformation)) (nil? (:height transformation)) (:retina-optimized? transformation))
       (throw (Exception. (format "Cannot optimize \"%s\" for retina when there is no width and/or height set" url))))
     (let [path (str resource-path "/" filename)
           jpg-file (io/resource (str path ".jpg"))
@@ -186,7 +186,7 @@
         (throw (Exception. (format "Found both %s.jpg and %s.png, unable to select input. Please make sure there is only one file under this name" path path))))
       (when (and (nil? jpg-file) (nil? png-file))
         (throw (Exception. (format "Found neither %s.jpg nor %s.png, unable to select input." path path))))
-      (let [spec (merge (if (and (= :jpg ext) retina-optimized?)
+      (let [spec (merge (if (and (= :jpg ext) (:retina-optimized? transformation))
                           (prepare-jpg-for-retina transformation)
                           transformation)
                         {:ext ext
