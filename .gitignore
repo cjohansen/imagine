@@ -1,2 +1,4 @@
 .cpcache
 /.nrepl-port
+/imagine.jar
+target

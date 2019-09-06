@@ -68,7 +68,7 @@
 (defmethod transform :scale [_ image s]
   (collage/scale image s))
 
-(defn- size-output [{:keys [width height]} image]
+(defn- size-output [{:keys [width height] :as c} image]
   (if (and (nil? width) (nil? height))
     image
     (collage/resize image :width width :height height)))
@@ -76,12 +76,12 @@
 (defn transform-image
   "Transforms an image according to the transformation specs and returns
   a `BufferedImage`."
-  [transformation]
-  (loop [image (util/load-image (:resource transformation))
-         [transformation & transformations] (:transformations transformation)]
+  [transformation-config]
+  (loop [image (util/load-image (:resource transformation-config))
+         [transformation & transformations] (:transformations transformation-config)]
     (if transformation
       (recur (apply transform (first transformation) image (rest transformation)) transformations)
-      (size-output transformation image))))
+      (size-output transformation-config image))))
 
 (defn write-image
   "Writes `image` with the specified quality parameters to `file-path`.
@@ -95,6 +95,10 @@
                :progressive (or progressive? false))
 
     (= :png ext) (util/save image file-path)))
+
+(defn transform-image-to-file [transformation file-path]
+  (-> (transform-image transformation)
+      (write-image transformation file-path)))
 
 (defn- get-ext [file-path transformation]
   (if (or (some #(= :circle (first %)) (:transformations transformation))
@@ -157,9 +161,10 @@
   "Given a spec from `image-spec` and a config map, validate and inflate
   the spec so it includes all details necessary to perform the
   transformation."
-  [{:keys [transform filename ext url]}
-   {:keys [transformations retina-optimized? resource-path width height] :as config}]
-  (let [transformation (get transformations transform)]
+  [spec config]
+  (let [{:keys [transform filename ext url]} spec
+        {:keys [transformations retina-optimized? resource-path width height]} config
+        transformation (get transformations transform)]
     (when (nil? transformation)
       (throw (Exception. (format "Unknown transform \"%s\" in URL \"%s\", use one of %s" transform url (keys transformations)))))
     (when-not (contains? #{:png :jpg} ext)
@@ -173,11 +178,11 @@
         (throw (Exception. (format "Found both %s.jpg and %s.png, unable to select input. Please make sure there is only one file under this name" path path))))
       (when (and (nil? jpg-file) (nil? png-file))
         (throw (Exception. (format "Found neither %s.jpg nor %s.png, unable to select input." path path))))
-      (let [spec {:transformation (if (and (= :jpg ext) retina-optimized?)
-                                    transformation
-                                    transformation)
-                  :ext ext
-                  :resource (or jpg-file png-file)}]
+      (let [spec (merge (if (and (= :jpg ext) retina-optimized?)
+                          transformation
+                          transformation)
+                        {:ext ext
+                         :resource (or jpg-file png-file)})]
         (assoc spec :cache-path (cache-path config spec))))))
 
 (defn cached?

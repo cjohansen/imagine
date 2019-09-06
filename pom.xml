@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>cjohansen</groupId>
+  <artifactId>imagine</artifactId>
+  <version>2019.09.06</version>
+  <name>imagine</name>
+  <dependencies>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure</artifactId>
+      <version>1.10.1</version>
+    </dependency>
+    <dependency>
+      <groupId>fivetonine</groupId>
+      <artifactId>collage</artifactId>
+      <version>0.3.0</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+  </build>
+  <repositories>
+    <repository>
+      <id>clojars</id>
+      <url>https://repo.clojars.org/</url>
+    </repository>
+  </repositories>
+  <distributionManagement>
+    <repository>
+      <id>clojars</id>
+      <name>Clojars repository</name>
+      <url>https://clojars.org/repo</url>
+    </repository>
+  </distributionManagement>
+  <description>Transform and optimize images for serving over the web - either as a Ring middelware, or to disk.</description>
+  <url>https://github.com/cjohansen/imagine</url>
+  <licenses>
+    <license>
+      <name>EPL</name>
+      <url>https://opensource.org/licenses/EPL-2.0</url>
+    </license>
+  </licenses>
+  <scm>
+    <connection>scm:git:git://github.com/cjohansen/imagine.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/cjohansen/imagine.git</developerConnection>
+    <tag>v2019.09.06</tag>
+    <url>https://github.com/cjohansen/imagine</url>
+  </scm>
+</project>
