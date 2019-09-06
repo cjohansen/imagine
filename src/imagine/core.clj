@@ -53,7 +53,7 @@
 (defmethod transform :triangle [_ image position]
   (when-not (keyword? position)
     (throw (Exception. (format "Triangle expects a keyword position: [:triangle :lower-left]. Choose from #{:lower-left :lower-right :upper-left :upper-right}"))))
-  (collage/triangle image position))
+  (collage/triangle image {:position position}))
 
 (defmethod transform :circle [_ image & [position]]
   (when position
