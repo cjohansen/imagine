@@ -43,13 +43,21 @@
     opt))
 
 (defmethod transform :crop [_ image opts]
+  (when-not (map? opts)
+    (if (= :square opts)
+      (throw (Exception. (format "Crop expects a map of options. To square an image, do [:crop {:preset :square}]")))
+      (throw (Exception. (format "Crop expects a map of options {:preset :width :height :offset-x :offset-y}")))))
   (let [{:keys [width height offset-x offset-y]} (crop-params image opts)]
     (collage/crop image offset-x offset-y width height)))
 
 (defmethod transform :triangle [_ image position]
+  (when-not (keyword? opts)
+    (throw (Exception. (format "Triangle expects a keyword position: [:triangle :lower-left]. Choose from #{:lower-left :lower-right :upper-left :upper-right}"))))
   (collage/triangle image position))
 
 (defmethod transform :circle [_ image position]
+  (when position
+    (throw (Exception. (format "Circle does not yet implement its position argument"))))
   ;; position not yet implemented
   (collage/circle image))
 
