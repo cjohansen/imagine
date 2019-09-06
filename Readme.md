@@ -76,8 +76,41 @@ the following keys:
   images. An image URL of `/<prefix>/<style>/<content-hash>/path.ext` will look
   for a resource `<resource-path>/<path>.<ext>`.
 - `:transformations` - The available transformations. This is a map of
-  transformation name to a vector of transformations to apply. Each
-  transformation is itself a vector.
+  transformation name to a map describing the transformation. [See
+  below](#transformation-config) for details.
+- `:use-cacheable-urls?` - When set to `true`, imagine will compute the hash
+  part of the URL using the contents of the image file along with the
+  transformation config. This is slower, because the image must be read into
+  memory, even if a transformed version is already cached on disk, but it means
+  you can serve the image with a far future expires header - effectively caching
+  "forever" on the client. The default is `false`, and the value should be
+  `true` in production.
+- `:disk-cache?` - When set to `true`, transformed images will be cached
+  temporarily on disk. Subsequent requests to the same image/transformation
+  combination will serve the cached file on disk. **Note:** If
+  `:use-cacheable-urls?` is `false`, and the image file has changed since it was
+  last served, this will cause imagine to serve a stale image.
+- `:tmpdir` - The directory to cache transformed images in. Defaults to the
+  system `java.io.tmpdir`.
+
+### Transformation config
+
+The transformation map can contain these keys:
+
+- `:transformations` - A vector of transformations to apply. Each transformation
+  is itself a vector of `[:name & args]`, [see below](#transformations).
+- `:width` - The width of the output image.
+- `:height` - The height of the output image.
+- `:quality` - The JPG quality setting, from 0 to 1.
+- `:progressive?` - Whether the JPG should be progressive.
+- `:retina-optimized?` - Encodes the recommendation from [this article on retina
+  images](https://alidark.com/responsive-retina-image-mobile/) - double the
+  image size and lower the quality setting to `0.3`. Only applies to JPGs.
+
+If neither `:width` nor `:height` is set, the output image is not resized. If
+either one is missing, the other is computed to maintain aspect ratio. It is
+considered an error to set `:retina-optimized?` to `true` when there is no
+explicit `:width` or `:height`.
 
 ## Transformations
 
@@ -85,21 +118,6 @@ Transformation configurations can include multiple transformations - even the
 same transformation multiple times. Think of them as a pipeline to perform in
 order. A transformation configuration is a vector of `[transformation-keyword
 params]`.
-
-### Resize
-
-Resizes the image. Accepts a hash of options as its only argument:
-
-- `:width` - The width to resize to. If not set, aspect ratio will be
-  maintained, and `:width` is calculated from `:height`
-- `:height` - The height to resize to. If not set, aspect ratio will be
-  maintained, and `:height` is calculated from `:width`
-
-If neither `:width` nor `:height` is set, an exception is thrown.
-
-```clj
-[:resize {:width 200}]
-```
 
 ### Crop
 
@@ -189,6 +207,24 @@ Rotates the image one of `90`, `180` or `270` degrees.
 
 ```clj
 [:rotate 90]
+```
+
+### Resize
+
+Resizes the image. Only use this transform if you need to resize the image
+before applying other transforms. Use `:width` and/or `:height` on the
+transformation map to control output size. Accepts a hash of options as its only
+argument:
+
+- `:width` - The width to resize to. If not set, aspect ratio will be
+  maintained, and `:width` is calculated from `:height`
+- `:height` - The height to resize to. If not set, aspect ratio will be
+  maintained, and `:height` is calculated from `:width`
+
+If neither `:width` nor `:height` is set, an exception is thrown.
+
+```clj
+[:resize {:width 200}]
 ```
 
 ## API
