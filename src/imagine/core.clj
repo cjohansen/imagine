@@ -27,20 +27,44 @@
 
 (defmulti transform (fn [transformation image & args] transformation))
 
-(defn crop-params [^BufferedImage image {:keys [width height preset offset-x offset-y] :as opt}]
-  (if (= :square preset)
-    (let [w (.getWidth image)
-          h (.getHeight image)
-          min-dimension (min w h)
-          cropped-offset (- (/ (max w h) 2) (/ min-dimension 2))
-          [off-x off-y] (if (> w h)
-                          [cropped-offset 0]
-                          [0 cropped-offset])]
-      {:offset-x (or offset-x off-x)
-       :offset-y (or offset-y off-y)
-       :width min-dimension
-       :height min-dimension})
+(defn- resolve-offset [opt k image-dim crop-k [start center end]]
+  (let [offset (opt k)
+        crop-dim (opt crop-k)]
+    (dissoc
+     (cond
+       (number? offset) opt
+       (or (= start offset) (nil? offset)) (assoc opt k 0)
+       (= center offset) (assoc opt k (int (/ (- image-dim crop-dim) 2)))
+       (= end offset) (assoc opt k (- image-dim crop-dim)))
+     :preset)))
+
+(defn- resolve-crop-presets [opt width height]
+  (if (= :square (:preset opt))
+    (let [dim (min width height)]
+      (merge opt {:width dim
+                  :height dim
+                  :offset-x (or (:offset-x opt) :center)
+                  :offset-y (or (:offset-y opt) :center)}))
     opt))
+
+(defn- resolve-dimensions [opt w h]
+  (cond
+    (nil? (:width opt))
+    (assoc opt :width (int (* (/ w h) (:height opt))))
+
+    (nil? (:height opt))
+    (assoc opt :height (int (* (/ h w) (:width opt))))
+
+    :default opt))
+
+(defn crop-params [^BufferedImage image {:keys [width height offset-x offset-y] :as opt}]
+  (let [w (.getWidth image)
+        h (.getHeight image)]
+    (-> opt
+        (resolve-crop-presets w h)
+        (resolve-dimensions w h)
+        (resolve-offset :offset-x w :width [:left :center :right])
+        (resolve-offset :offset-y h :height [:top :center :bottom]))))
 
 (defmethod transform :crop [_ image opts]
   (when-not (map? opts)

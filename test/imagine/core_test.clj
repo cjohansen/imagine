@@ -11,24 +11,46 @@
   (is (= (sut/crop-params nil {:width 100 :height 200 :offset-x 0 :offset-y 0})
          {:width 100 :height 200 :offset-x 0 :offset-y 0})))
 
-(deftest square-crop-params-test
-  (let [image (BufferedImage. 100 200 BufferedImage/TYPE_INT_ARGB)]
-    (is (= (sut/crop-params image {:preset :square})
-           {:width 100 :height 100 :offset-x 0 :offset-y 50}))))
+(defn image [w h]
+  (BufferedImage. w h BufferedImage/TYPE_INT_ARGB))
 
-(def config
-  {:transformations
-   {:green-circle {:transformations [[:crop {:preset :square}]
-                                     [:circle]
-                                     [:duotone [0 120 0] [0 255 0]]]}
-    :red-circle {:transformations [[:crop {:preset :square}]
-                                   [:circle]
-                                   [:duotone [120 0 0] [255 0 0]]]}
-    :square {:transformations [[:crop {:preset :square}]]
-             :retina-optimized? true}}
-   :cacheable-urls? false
-   :resource-path "public"
-   :prefix "image-assets"})
+(deftest square-crop-params-test
+  (is (= (sut/crop-params (image 100 200) {:preset :square})
+         {:width 100 :height 100 :offset-x 0 :offset-y 50})))
+
+(deftest square-crop-top-test
+  (is (= (sut/crop-params (image 100 200) {:preset :square :offset-y :top})
+         {:width 100 :height 100 :offset-x 0 :offset-y 0})))
+
+(deftest square-crop-bottom-test
+  (is (= (sut/crop-params (image 100 200) {:preset :square :offset-y :bottom})
+         {:width 100 :height 100 :offset-x 0 :offset-y 100})))
+
+(deftest square-crop-center-test
+  (is (= (sut/crop-params (image 100 200) {:preset :square :offset-y :center})
+         {:width 100 :height 100 :offset-x 0 :offset-y 50})))
+
+(deftest square-crop-left-test
+  (is (= (sut/crop-params (image 200 100) {:preset :square :offset-x :left})
+         {:width 100 :height 100 :offset-x 0 :offset-y 0})))
+
+(deftest square-crop-right-test
+  (is (= (sut/crop-params (image 200 100) {:preset :square :offset-x :right})
+         {:width 100 :height 100 :offset-x 100 :offset-y 0})))
+
+(deftest square-crop-horizontal-center-test
+  (is (= (sut/crop-params (image 200 100) {:preset :square :offset-x :center})
+         {:width 100 :height 100 :offset-y 0 :offset-x 50})))
+
+(deftest square-crop-right-bottom
+  (is (= (sut/crop-params (image 500 1000) {:width 400
+                                            :height 300
+                                            :offset-x :right
+                                            :offset-y :bottom})
+         {:width 400
+          :height 300
+          :offset-x 100
+          :offset-y 700})))
 
 (deftest content-hash-test-should-be-idempotent
   (is (= (sut/content-hash "image-1.jpg" :green-circle config)
