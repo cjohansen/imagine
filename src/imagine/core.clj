@@ -3,14 +3,17 @@
             [fivetonine.collage.core :as collage]
             [imagine.digest :as digest]
             [clojure.java.io :as io])
-  (:import java.net.URL
+  (:import java.io.File
            java.awt.image.BufferedImage))
 
-(defn- last-modified [#^URL resource]
-  (let [url-connection (.openConnection resource)
-        modified (.getLastModified url-connection)]
-    (.close (.getInputStream url-connection))
-    modified))
+(def formatter
+  (doto (java.text.SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz" java.util.Locale/US)
+    (.setTimeZone (java.util.TimeZone/getTimeZone "GMT"))))
+
+(defn last-modified [^File file]
+  (.format formatter (-> (.lastModified file)
+                         (/ 1000) (long) (* 1000)
+                         (java.util.Date.))))
 
 (def default-tmpdir (System/getProperty "java.io.tmpdir"))
 
@@ -321,7 +324,7 @@
     (let [file (io/file (:cache-path spec))]
      {:status 200
       :headers {"last-modified" (last-modified file)}
-      :body (.toURL file)})))
+      :body file})))
 
 (defn image-url?
   "Returns true if the URL is a request for a transformed image - e.g.,
