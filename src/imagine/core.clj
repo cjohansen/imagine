@@ -321,7 +321,7 @@
     (let [file (io/file (:cache-path spec))]
      {:status 200
       :headers {"last-modified" (last-modified file)}
-      :body file})))
+      :body (.toURL file)})))
 
 (defn image-url?
   "Returns true if the URL is a request for a transformed image - e.g.,
