@@ -111,7 +111,7 @@
   (collage/resize image :width width :height height))
 
 (defmethod transform :resize [_ image opt]
-  (resize (resize-params image opt)))
+  (resize image (resize-params image opt)))
 
 (defn- fit-resize-params-1 [img-ratio frame-ratio width height]
   (cond
