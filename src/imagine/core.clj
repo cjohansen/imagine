@@ -251,12 +251,13 @@
   "Given a config map, a keyword transform to apply, and the path to a
   file, return a URL that the middleware will recognize and process."
   [config transform file-path]
-  (format "/%s/%s/%s/%s.%s"
-          (:prefix config)
-          (name transform)
-          (content-hash file-path transform config)
-          (second (re-find #"(.+)\.[^\.]+$" file-path))
-          (get-ext file-path (get (:transformations config) transform))))
+  (when-let [transformation (get (:transformations config) transform)]
+    (format "/%s/%s/%s/%s.%s"
+            (:prefix config)
+            (name transform)
+            (content-hash file-path transform config)
+            (second (re-find #"(.+)\.[^\.]+$" file-path))
+            (get-ext file-path transformation))))
 
 (defn realize-url
   "Given an an URL that contains only a transformation and a file name,
