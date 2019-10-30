@@ -4,7 +4,9 @@
             [imagine.digest :as digest]
             [clojure.java.io :as io])
   (:import java.io.File
-           java.awt.image.BufferedImage))
+           java.awt.image.BufferedImage
+           java.awt.image.ColorConvertOp
+           java.awt.color.ColorSpace))
 
 (def formatter
   (doto (java.text.SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz" java.util.Locale/US)
@@ -93,8 +95,16 @@
 (defmethod transform :grayscale [_ image]
   (collage/grayscale image))
 
+(defn ensure-rgb [^BufferedImage image]
+  (let [output (BufferedImage. (.getWidth image) (.getHeight image) BufferedImage/TYPE_INT_RGB)]
+    (-> (ColorConvertOp. (.. image getColorModel getColorSpace) (ColorSpace/getInstance ColorSpace/CS_sRGB) nil)
+        (.filter image output))
+    output))
+
 (defmethod transform :duotone [_ image from-color to-color]
-  (collage/duotone image from-color to-color))
+  (-> image
+      ensure-rgb
+      (collage/duotone from-color to-color)))
 
 (defmethod transform :rotate [_ image theta]
   (collage/rotate image theta))
