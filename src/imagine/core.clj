@@ -161,8 +161,12 @@
         h (.getHeight image)
         params (fit-resize-params-1 (/ w h) (/ width height) width height)]
     (cond
-      (and (= w (:width params))
-           (= h (:height params))) nil
+      (or (and (= w (:width params))
+               (= h (:height params)))
+          (and (= width w)
+               (< height h))
+          (and (< width w)
+               (= height h))) nil
 
       (or scale-up?
           (and (<= (:width params) w)
