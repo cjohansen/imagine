@@ -3,8 +3,19 @@
             [clojure.test :refer [deftest is testing]])
   (:import java.awt.image.BufferedImage))
 
+(defn image [w h]
+  (BufferedImage. w h BufferedImage/TYPE_INT_RGB))
+
+(deftest fit-resize-same-layout-too-tall
+  (is (= (sut/fit-resize-params (image 1024 561) {:width 270 :height 135})
+         {:width 270
+          :height 147})))
+
+(deftest fit-resize-slightly-too-tall
+  (is (nil? (sut/fit-resize-params (image 600 801) {:width 800 :height 600}))))
+
 (deftest crop-params-wh-test
-  (is (= (sut/crop-params nil {:width 100 :height 200})
+  (is (= (sut/crop-params (image 200 200) {:width 100 :height 200})
          {:width 100 :height 200})))
 
 (deftest crop-params-wh-offset-test

@@ -141,7 +141,7 @@
     ;; Wide image, wide frame
     (and (< 1 img-ratio)
          (< 1 frame-ratio))
-    {:height (int (* img-ratio width)) :width width}
+    {:height (int (/ width img-ratio)) :width width}
 
     ;; Wide image, tall or square frame
     (< 1 img-ratio)
@@ -368,3 +368,54 @@
            (raise e)))
        (handler req respond raise)))))
 
+(comment
+
+  (def config
+    {:prefix "image-assets"
+     :resource-path "public"
+     :transformations
+     {:identity {}
+      :crazy {:transformations [[:crop :square]
+                                [:duotone [120 0 0] [0 255 0]]]
+              :width 300}
+      :vcard {:transformations [[:crop {:preset :square}]]
+              :retina-optimized? true
+              :width 92}
+
+      :vertigo {:height 850
+                :retina-optimized? true}
+
+      :big {:transformations [[:crop {:preset :square}]
+                              [:circle]
+                              [:triangle :bottom-right]]
+            :width 666}}})
+
+  (-> (image-spec "/image-assets/vertigo/_/references/petter-og-soheil.jpg")
+      (inflate-spec config)
+      #_(transform-image-to-file "/tmp/lol.png"))
+
+
+  (-> {:transformations
+       [[:fit {:width 483 :height 400 :offset-y :top}]]
+       :ext :jpg
+       :resource (clojure.java.io/file "/Users/christian/Downloads/spaghetti.jpg")
+       :cache-path "/tmp/spaghetti.jpg"}
+      (transform-image-to-file "/tmp/fit.png"))
+
+
+  (-> {:transformations
+       [[:crop {:preset :square}]
+        [:resize {:width 774}]
+        [:duotone [255 82 75] [255 255 255]]
+        [:circle]
+        [:triangle :lower-left]
+        [:crop {:width 666 :offset-y :bottom}]]
+       :ext :jpg
+       :resource (clojure.java.io/file "/Users/christian/Downloads/spaghetti.jpg")
+       :cache-path "/tmp/spaghetti.jpg"}
+      (transform-image-to-file "/tmp/bruce-top.png"))
+
+  (->
+      (transform-image-to-file "/tmp/bruce-top.png"))
+
+  )
