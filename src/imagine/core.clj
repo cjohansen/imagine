@@ -355,7 +355,16 @@
   "Ring middleware - intercept any request to the configured prefix, and
   serve transformed images from it."
   [handler & [config]]
-  (fn [req]
-    (if (image-req? req config)
-      (serve-image req config)
-      (handler req))))
+  (fn
+    ([req]
+     (if (image-req? req config)
+       (serve-image req config)
+       (handler req)))
+    ([req respond raise]
+     (if (image-req? req config)
+       (try
+         (respond (serve-image req config))
+         (catch Exception e
+           (raise e)))
+       (handler req respond raise)))))
+
