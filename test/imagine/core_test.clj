@@ -6,24 +6,68 @@
 (defn image [w h]
   (BufferedImage. w h BufferedImage/TYPE_INT_RGB))
 
-(deftest fit-resize-same-layout-too-tall
-  (is (= (sut/fit-resize-params (image 1024 561) {:width 270 :height 135})
-         {:width 270
-          :height 147})))
+(deftest fit-resize-same-size
+  (is (nil? (sut/fit-resize-params (image 1024 768) {:width 1024 :height 768}))))
+
+(deftest fit-resize-same-width-too-tall
+  (is (nil? (sut/fit-resize-params (image 1024 900) {:width 1024 :height 768}))))
+
+(deftest fit-resize-same-width-too-short
+  (is (nil? (sut/fit-resize-params (image 1024 384) {:width 1024 :height 768}))))
+
+(deftest fit-resize-same-width-too-short-can-scale-up
+  (is (= (sut/fit-resize-params (image 1024 384) {:width 1024 :height 768 :scale-up? true})
+         {:width 2048,:height 768})))
+
+(deftest fit-resize-same-height-too-wide
+  (is (nil? (sut/fit-resize-params (image 1224 768) {:width 1024 :height 768}))))
+
+(deftest fit-resize-same-height-too-narrow
+  (is (nil? (sut/fit-resize-params (image 800 900) {:width 1024 :height 768}))))
+
+(deftest fit-resize-same-height-too-narrow-can-scale-up
+  (is (= (sut/fit-resize-params (image 800 900) {:width 1000 :height 800 :scale-up? true})
+         {:width 1000, :height 1125})))
+
+(deftest fit-resize-same-aspect-ratio
+  (is (= (sut/fit-resize-params (image 1000 500) {:width 500 :height 250})
+         {:width 500, :height 250})))
+
+(deftest fit-resize-same-orientation-too-tall
+  (is (= (sut/fit-resize-params (image 1000 500) {:width 300 :height 100})
+         {:width 300, :height 150})))
+
+(deftest fit-resize-same-orientation-too-short
+  (is (= (sut/fit-resize-params (image 1000 200) {:width 300 :height 100})
+         {:width 500, :height 100})))
+
+(deftest fit-resize-opposite-orientation
+  (is (= (sut/fit-resize-params (image 600 800) {:width 300 :height 200})
+         {:width 300, :height 400})))
+
+(deftest fit-resize-way-too-small
+  (is (nil? (sut/fit-resize-params (image 1025 568) {:width 1600 :height 600}))))
+
+(deftest fit-crop-way-too-small
+  (is (nil? (sut/fit-crop-params (image 1025 568) {:width 1600 :height 600}))))
 
 (deftest fit-resize-slightly-too-tall
   (is (nil? (sut/fit-resize-params (image 600 801) {:width 800 :height 600}))))
 
+(deftest fit-crop-too-narrow
+  (is (= (sut/fit-crop-params (image 1000 700) {:width 1600 :height 600})
+         {:width 1000
+          :height 600
+          :offset-y 50
+          :offset-x 0})))
+
 (deftest crop-params-wh-test
   (is (= (sut/crop-params (image 200 200) {:width 100 :height 200})
-         {:width 100 :height 200})))
-
-(deftest crop-params-wh-offset-test
-  (is (= (sut/crop-params nil {:width 100 :height 200 :offset-x 0 :offset-y 0})
          {:width 100 :height 200 :offset-x 0 :offset-y 0})))
 
-(defn image [w h]
-  (BufferedImage. w h BufferedImage/TYPE_INT_ARGB))
+(deftest crop-params-wh-offset-test
+  (is (= (sut/crop-params (image 200 200) {:width 100 :height 200 :offset-x 0 :offset-y 0})
+         {:width 100 :height 200 :offset-x 0 :offset-y 0})))
 
 (deftest square-crop-params-test
   (is (= (sut/crop-params (image 100 200) {:preset :square})
@@ -97,7 +141,7 @@
 
   (is (= (sut/fit-resize-params (image 1000 800) {:width 500 :height 250})
          {:width 500
-          :height 625}))
+          :height 400}))
 
   (is (= (sut/fit-resize-params (image 1000 800) {:width 250 :height 500})
          {:width 625
@@ -107,7 +151,7 @@
 
   (is (= (sut/fit-resize-params (image 1000 800) {:width 1500 :height 1000 :scale-up? true})
          {:width 1500
-          :height 1875})))
+          :height 1200})))
 
 (deftest fit-resize-params-tall-image-test
   (is (= (sut/fit-resize-params (image 800 1000) {:width 500 :height 500})
@@ -145,28 +189,41 @@
           :offset-x 0})))
 
 (deftest content-hash-test-should-be-idempotent
-  (is (= (sut/content-hash "image-1.jpg" :green-circle config)
-         (sut/content-hash "image-1.jpg" :green-circle config))))
+  (let [config {:transformations {:green-circle [[:crop {:width 200 :height 200}]
+                                                 [:circle]]}}]
+    (is (= (sut/content-hash "image-1.jpg" :green-circle config)
+           (sut/content-hash "image-1.jpg" :green-circle config)))))
 
 (deftest content-hash-different-files-same-config
-  (is (not= (sut/content-hash "image-1.jpg" :green-circle config)
-            (sut/content-hash "image-2.jpg" :green-circle config))))
+  (let [config {:transformations {:green-circle [[:crop {:width 200 :height 200}]
+                                                 [:circle]]}}]
+    (is (not= (sut/content-hash "image-1.jpg" :green-circle config)
+              (sut/content-hash "image-2.jpg" :green-circle config)))))
 
 (deftest content-hash-different-configs-same-file
-  (is (not= (sut/content-hash "image-1.jpg" :green-circle config)
-            (sut/content-hash "image-1.jpg" :red-circle config))))
+  (let [config {:transformations {:green-circle [[:crop {:width 200 :height 200}]
+                                                 [:circle]]}}]
+    (is (not= (sut/content-hash "image-1.jpg" :green-circle config)
+              (sut/content-hash "image-1.jpg" :red-circle config)))))
 
 (deftest url-to-circle-makes-pngs
-  (is (= (sut/url-to config :green-circle "photos/myself.jpg")
-         "/image-assets/green-circle/a7c416925aa150ed8b3dce7888e0294500553220/photos/myself.png")))
+  (is (= (-> {:transformations {:circle [[:crop {:width 200 :height 200}]
+                                         [:circle]]}
+              :prefix "image-assets"}
+             (sut/url-to :circle "photos/myself.jpg"))
+         "/image-assets/circle/6fd63fd83c31692da08cea2ffd02d982c5a76e9b/photos/myself.png")))
 
 (deftest url-to-keeps-jpg
-  (is (= (sut/url-to config :square "photos/myself.jpg")
-         "/image-assets/square/80f3b08338e02af4b0e796110f94aca934e4c65f/photos/myself.jpg")))
+  (is (= (-> {:transformations {:square [[:crop {:width 200 :height 200}]]}
+              :prefix "image-assets"}
+             (sut/url-to :square "photos/myself.jpg"))
+         "/image-assets/square/cc9471e730e6b75fb68081b17b079254c0019c1c/photos/myself.jpg")))
 
 (deftest realize-url-test
-  (is (= (sut/realize-url config "/square/photos/myself.jpg")
-         "/image-assets/square/80f3b08338e02af4b0e796110f94aca934e4c65f/photos/myself.jpg")))
+  (is (= (-> {:transformations {:square [[:crop {:width 200 :height 200}]]}
+              :prefix "image-assets"}
+             (sut/realize-url "/square/photos/myself.jpg"))
+         "/image-assets/square/cc9471e730e6b75fb68081b17b079254c0019c1c/photos/myself.jpg")))
 
 (deftest image-spec-test
   (is (= (sut/image-spec "/image-assets/square/80f3b0/photos/myself.jpg")

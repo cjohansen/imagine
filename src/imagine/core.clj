@@ -126,62 +126,39 @@
 (defmethod transform :resize [_ image opt]
   (resize image (resize-params image opt)))
 
-(defn- fit-resize-params-1 [img-ratio frame-ratio width height]
-  (cond
-    ;; Aspect ratio unchanged
-    (= img-ratio frame-ratio)
-    {:width width
-     :height height}
-
-    ;; Square images
-    (= 1 img-ratio)
-    (let [dim (max width height)]
-      {:width dim :height dim})
-
-    ;; Wide image, wide frame
-    (and (< 1 img-ratio)
-         (< 1 frame-ratio))
-    {:height (int (/ width img-ratio)) :width width}
-
-    ;; Wide image, tall or square frame
-    (< 1 img-ratio)
-    {:width (int (* img-ratio height)) :height height}
-
-    ;; Tall image, tall
-    (and (< img-ratio 1)
-         (< frame-ratio 1))
-    {:width (int (* img-ratio height)) :height height}
-
-    ;; Tall image, wide or square frame
-    :default
-    {:width width :height (int (/ width img-ratio))}))
+(defn- fit-resize-params-1 [img-w img-h frame-w frame-h]
+  (let [by-width-factor (/ frame-w img-w)
+        [bww bwh] [(* by-width-factor img-w) (* by-width-factor img-h)]
+        by-height-factor (/ frame-h img-h)
+        [bhw bhh] [(* by-height-factor img-w) (* by-height-factor img-h)]]
+    (if (or (< bww frame-w) (< bwh frame-h))
+      {:width bhw :height bhh}
+      {:width bww :height bwh})))
 
 (defn fit-resize-params [^BufferedImage image {:keys [width height scale-up?]}]
   (let [w (.getWidth image)
-        h (.getHeight image)
-        params (fit-resize-params-1 (/ w h) (/ width height) width height)]
-    (cond
-      (or (and (= w (:width params))
-               (= h (:height params)))
-          (and (= width w)
-               (< height h))
-          (and (< width w)
-               (= height h))) nil
-
-      (or scale-up?
-          (and (<= (:width params) w)
-               (<= (:height params) h)))
-      params
-
-      :default nil)))
+        h (.getHeight image)]
+    (if (or (and (= width w)
+                 (<= height h))
+            (and (<= width w)
+                 (= height h)))
+      nil
+      (let [params (fit-resize-params-1 w h width height)]
+        (if (or scale-up?
+             (and (<= (:width params) w)
+                  (<= (:height params) h)))
+          (-> params
+              (update :width int)
+              (update :height int))
+          nil)))))
 
 (defn fit-crop-params [^BufferedImage image {:keys [width height offset-y offset-x]}]
   (let [w (.getWidth image)
         h (.getHeight image)]
-    (if (and (= w width) (= h height))
+    (if (and (<= w width) (<= h height))
       nil
-      (crop-params image {:width width
-                          :height height
+      (crop-params image {:width (min w width)
+                          :height (min h height)
                           :offset-y (or offset-y :center)
                           :offset-x (or offset-x :center)}))))
 
@@ -200,8 +177,10 @@
 (defmethod transform :scale [_ image s]
   (collage/scale image s))
 
-(defn- size-output [{:keys [width height] :as c} image]
-  (if (and (nil? width) (nil? height))
+(defn- size-output [{:keys [width height] :as c} ^BufferedImage image]
+  (if (or (and (nil? width) (nil? height))
+          (< (.getWidth image) width)
+          (< (.getHeight image) height))
     image
     (collage/resize image :width width :height height)))
 
@@ -218,23 +197,27 @@
 (defn write-image
   "Writes `image` with the specified quality parameters to `file-path`.
   Creates necessary parent directories."
-  [image {:keys [ext quality progressive?]} file-path]
+  [^BufferedImage image {:keys [ext quality progressive? width height]} file-path]
   (create-folders file-path)
-  (cond
-    (= :jpg ext)
-    (util/save image file-path
-               :quality (or quality 1)
-               :progressive (or progressive? false))
+  (let [quality (if (or (< (.getWidth image) width)
+                        (< (.getHeight image) height))
+                  1
+                  quality)]
+    (cond
+      (= :jpg ext)
+      (util/save image file-path
+                 :quality (or quality 1)
+                 :progressive (or progressive? false))
 
-    (= :png ext) (util/save image file-path)))
+      (= :png ext) (util/save image file-path))))
 
 (defn transform-image-to-file [transformation file-path]
   (-> (transform-image transformation)
       (write-image transformation file-path)))
 
-(defn- get-ext [file-path transformation]
-  (if (or (some #(= :circle (first %)) (:transformations transformation))
-          (some #(= :triangle (first %)) (:transformations transformation)))
+(defn- get-ext [file-path transformations]
+  (if (or (some #(= :circle (first %)) transformations)
+          (some #(= :triangle (first %)) transformations))
     "png"
     (last (re-find #"\.([^\.]+)$" file-path))))
 
