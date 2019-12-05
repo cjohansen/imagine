@@ -11,13 +11,13 @@ ideal for client-side caching and a high-performant site.
 Install with tools.deps:
 
 ```clj
-cjohansen/imagine {:mvn/version "2019.11.01"}
+cjohansen/imagine {:mvn/version "2019.12.05"}
 ```
 
 Install with Leiningen:
 
 ```clj
-[cjohansen/imagine "2019.11.01"]
+[cjohansen/imagine "2019.12.05"]
 ```
 
 ## Using with Ring
@@ -78,9 +78,9 @@ in, the following snippet will provide you with all the images you need:
 `imagine` relies on an image asset configuration to do its job. It can contain
 the following keys:
 
-- `:url-prefix` - When using the Ring middleware, any URL starting with this
-  string will be handled by `imagine`. The prefix should not include a leading
-  slash.
+- `:prefix` - When using the Ring middleware, any URL starting with this string
+  will be handled by `imagine`. The prefix should not include a leading slash.
+  This prefix cannot be empty. If omitted, it defaults to `"image-assets"`.
 - `:resource-path` - The prefix path in the resources under which to look for
   images. An image URL of `/<prefix>/<style>/<content-hash>/path.ext` will look
   for a resource `<resource-path>/<path>.<ext>`.
