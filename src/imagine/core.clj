@@ -244,7 +244,7 @@
             (name transform)
             (content-hash file-path transform config)
             (second (re-find #"(.+)\.[^\.]+$" file-path))
-            (get-ext file-path transformation))))
+            (get-ext file-path (:transformations transformation)))))
 
 (defn realize-url
   "Given an an URL that contains only a transformation and a file name,

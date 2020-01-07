@@ -207,8 +207,9 @@
               (sut/content-hash "image-1.jpg" :red-circle config)))))
 
 (deftest url-to-circle-makes-pngs
-  (is (= (-> {:transformations {:circle [[:crop {:width 200 :height 200}]
-                                         [:circle]]}
+  (is (= (-> {:transformations {:circle {:transformations
+                                         [[:crop {:width 200 :height 200}]
+                                          [:circle]]}}
               :prefix "image-assets"}
              (sut/url-to :circle "photos/myself.jpg"))
          "/image-assets/circle/6fd63fd83c31692da08cea2ffd02d982c5a76e9b/photos/myself.png")))
