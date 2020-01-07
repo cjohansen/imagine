@@ -179,8 +179,8 @@
 
 (defn- size-output [{:keys [width height] :as c} ^BufferedImage image]
   (if (or (and (nil? width) (nil? height))
-          (< (.getWidth image) width)
-          (< (.getHeight image) height))
+          (< (.getWidth image) (or width (.getWidth image)))
+          (< (.getHeight image) (or height (.getHeight image))))
     image
     (collage/resize image :width width :height height)))
 
@@ -199,8 +199,8 @@
   Creates necessary parent directories."
   [^BufferedImage image {:keys [ext quality progressive? width height]} file-path]
   (create-folders file-path)
-  (let [quality (if (or (< (.getWidth image) width)
-                        (< (.getHeight image) height))
+  (let [quality (if (or (< (.getWidth image) (or width (.getWidth image)))
+                        (< (.getHeight image) (or height (.getHeight image))))
                   1
                   quality)]
     (cond
