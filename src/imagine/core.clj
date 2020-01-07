@@ -194,10 +194,21 @@
       (recur (apply transform (first transformation) image (rest transformation)) transformations)
       (size-output transformation-config image))))
 
+(defn- get-ext [file-path transformations]
+  (if (or (some #(= :circle (first %)) transformations)
+          (some #(= :triangle (first %)) transformations))
+    "png"
+    (last (re-find #"\.([^\.]+)$" file-path))))
+
 (defn write-image
   "Writes `image` with the specified quality parameters to `file-path`.
   Creates necessary parent directories."
-  [^BufferedImage image {:keys [ext quality progressive? width height]} file-path]
+  [^BufferedImage image {:keys [ext quality progressive? width height transformations] :as spec} file-path]
+  (let [[_ requested-ext] (re-find #"\.([^\.]+)$" file-path)
+        required-ext (get-ext file-path transformations)]
+    (when-not (= required-ext requested-ext)
+      (throw (Exception. (format "Tried to load %s as %s, but transformations specifies or requires it to be %s"
+                                 (:resource spec) requested-ext required-ext)))))
   (create-folders file-path)
   (let [quality (if (or (< (.getWidth image) (or width (.getWidth image)))
                         (< (.getHeight image) (or height (.getHeight image))))
@@ -214,12 +225,6 @@
 (defn transform-image-to-file [transformation file-path]
   (-> (transform-image transformation)
       (write-image transformation file-path)))
-
-(defn- get-ext [file-path transformations]
-  (if (or (some #(= :circle (first %)) transformations)
-          (some #(= :triangle (first %)) transformations))
-    "png"
-    (last (re-find #"\.([^\.]+)$" file-path))))
 
 (defn content-hash
   "Compute a hash of the contents. If the configuration key
