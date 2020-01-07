@@ -212,7 +212,7 @@
                                           [:circle]]}}
               :prefix "image-assets"}
              (sut/url-to :circle "photos/myself.jpg"))
-         "/image-assets/circle/6fd63fd83c31692da08cea2ffd02d982c5a76e9b/photos/myself.png")))
+         "/image-assets/circle/70d06474c6a0db878ed83b01b2b04e3c36692929/photos/myself.png")))
 
 (deftest url-to-keeps-jpg
   (is (= (-> {:transformations {:square [[:crop {:width 200 :height 200}]]}

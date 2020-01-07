@@ -11,13 +11,13 @@ ideal for client-side caching and a high-performant site.
 Install with tools.deps:
 
 ```clj
-cjohansen/imagine {:mvn/version "2019.12.05"}
+cjohansen/imagine {:mvn/version "2020.01.07"}
 ```
 
 Install with Leiningen:
 
 ```clj
-[cjohansen/imagine "2019.12.05"]
+[cjohansen/imagine "2020.01.07"]
 ```
 
 ## Using with Ring
@@ -144,12 +144,20 @@ Options:
   aspect ratio will be maintained, and `:height` is calculated from `:height`.
 - `:preset` - Can be set to `:square` to crop the image to, well, a square. The
   size of the image will be the smallest of width/height.
-- `:offset-x` - The horizontal cropping offset. Set to a number to indicate
-  pixel position, or optionally `:left`, `:center` or `:right` to anchor the
-  crop. If not set, `imagine` will attempt to crop to the center of the image.
-- `:offset-y` - The vertical cropping offset. Set to a number to indicate pixel
-  position, or optionally `:top`, `:center` or `:bottom` to anchor the crop. If
-  not set, `imagine` will attempt to crop to the center of the image.
+- `:origin` - Set to a vector of keywords, specifying the x and y origin of the
+  crop, use one of `:left`, `:center`, `:right` with one of `:top`, `:center`,
+  `:bottom`, e.g.: `[:left :center]`, to cut out superfluous pixels from the
+  top, bottom, and right of the image.
+- `:origin-x` - A keyword specifying only the horizontal anchoring point.
+- `:origin-y` - A keyword specifying only the vertical anchoring point.
+- `:allow-smaller?` - If the crop dimensions are larger than the actual size of
+  the image, is it ok to end up with an image smaller than the crop dimensions?
+  Defaults to `true`, set to `false` to have Imagine throw an exception when
+  attempting to crop an image in a way that exceeds its dimensions.
+
+`:offset-x` and `:offset-y` are supported for backwards compatibility, but
+should be avoided in favor of the `:origin` options. Both of these can take
+either a number, or one of the `:origin` keywords.
 
 ### Triangle
 
@@ -335,7 +343,7 @@ diretories.
 
 ## License
 
-Copyright © 2019 Christian Johansen
+Copyright © 2019-2020 Christian Johansen
 
 Distributed under the Eclipse Public License either version 1.0 or (at your
 option) any later version.

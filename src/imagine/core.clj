@@ -1,12 +1,11 @@
 (ns imagine.core
-  (:require [fivetonine.collage.util :as util]
+  (:require [clojure.java.io :as io]
             [fivetonine.collage.core :as collage]
-            [imagine.digest :as digest]
-            [clojure.java.io :as io])
-  (:import java.io.File
-           java.awt.image.BufferedImage
-           java.awt.image.ColorConvertOp
-           java.awt.color.ColorSpace))
+            [fivetonine.collage.util :as util]
+            [imagine.digest :as digest])
+  (:import java.awt.color.ColorSpace
+           [java.awt.image BufferedImage ColorConvertOp]
+           java.io.File))
 
 (def formatter
   (doto (java.text.SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz" java.util.Locale/US)
@@ -32,8 +31,8 @@
 
 (defmulti transform (fn [transformation image & args] transformation))
 
-(defn- resolve-offset [opt k image-dim crop-k [start center end]]
-  (let [offset (opt k)
+(defn- resolve-offset [opt k origin-k image-dim crop-k [start center end]]
+  (let [offset (or (opt origin-k) (opt k))
         crop-dim (opt crop-k)]
     (dissoc
      (cond
@@ -43,13 +42,16 @@
        (= end offset) (assoc opt k (- image-dim crop-dim)))
      :preset)))
 
+(defn- resolve-origin [opt & [default]]
+  (let [[default-x default-y] (or default [:left :top])]
+    (-> opt
+        (assoc :origin-x (or (:origin-x opt) (get-in opt [:origin 0]) (:offset-x opt) default-x))
+        (assoc :origin-y (or (:origin-y opt) (get-in opt [:origin 1]) (:offset-y opt) default-y)))))
+
 (defn- resolve-crop-presets [opt width height]
   (if (= :square (:preset opt))
     (let [dim (min width height)]
-      (merge opt {:width dim
-                  :height dim
-                  :offset-x (or (:offset-x opt) :center)
-                  :offset-y (or (:offset-y opt) :center)}))
+      (resolve-origin (merge opt {:width dim :height dim}) [:center :center]))
     opt))
 
 (defn- resolve-dimensions [opt w h]
@@ -62,14 +64,32 @@
 
     :default opt))
 
-(defn crop-params [^BufferedImage image {:keys [width height offset-x offset-y] :as opt}]
+(defn- too-small-to-crop? [w h {:keys [width height]}]
+  (or (< w width)
+      (< h height)))
+
+(defn- constrain-crop-opts [params width height opts]
+  (when (and (not (get opts :allow-smaller? true))
+             (too-small-to-crop? width height params))
+    (throw (Exception. (format "Tried to crop %sx%s image to %sx%s, but does not :allow-smaller? %s"
+                               width height
+                               (:width params) (:height params)
+                               params))))
+  (-> params
+      (update :width #(min width %))
+      (update :height #(min height %))))
+
+(defn crop-params [^BufferedImage image opt]
   (let [w (.getWidth image)
         h (.getHeight image)]
     (-> opt
         (resolve-crop-presets w h)
         (resolve-dimensions w h)
-        (resolve-offset :offset-x w :width [:left :center :right])
-        (resolve-offset :offset-y h :height [:top :center :bottom]))))
+        (resolve-origin)
+        (resolve-offset :offset-x :origin-x w :width [:left :center :right])
+        (resolve-offset :offset-y :origin-y h :height [:top :center :bottom])
+        (constrain-crop-opts w h opt)
+        (dissoc :origin-x :origin-y :origin))))
 
 (defn- crop [image {:keys [width height offset-x offset-y]}]
   (collage/crop image offset-x offset-y width height))
