@@ -5,7 +5,8 @@
             [imagine.digest :as digest])
   (:import java.awt.color.ColorSpace
            [java.awt.image BufferedImage ColorConvertOp]
-           java.io.File))
+           java.io.File
+           java.nio.file.Paths))
 
 (def formatter
   (doto (java.text.SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz" java.util.Locale/US)
@@ -22,12 +23,14 @@
   (.mkdirs (.getParentFile (io/file path))))
 
 (defn- cache-path [config spec]
-  (str (or (:tmpdir config) default-tmpdir)
-       (digest/sha-1 (pr-str (if (:cacheable-urls? config)
-                               (update spec :resource slurp)
-                               (update spec :resource #(.getPath %)))))
-       "."
-       (name (:ext spec))))
+  (.toString
+   (Paths/get
+    (or (:tmpdir config) default-tmpdir)
+    (into-array [(str (digest/sha-1 (pr-str (if (:cacheable-urls? config)
+                                              (update spec :resource slurp)
+                                              (update spec :resource #(.getPath %)))))
+                      "."
+                      (name (:ext spec)))]))))
 
 (defmulti transform (fn [transformation image & args] transformation))
 
