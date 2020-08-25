@@ -250,17 +250,18 @@
       (write-image transformation file-path)))
 
 (defn content-hash
-  "Compute a hash of the contents. If the configuration key
-  `:cacheable-urls?` is `false`, the hash will be faster, but less
-  correct, as it will only use the file path, and not the actual file
-  contents for the hash, along with the transformation configuration.
-  Always set `:cacheable-urls?` to `true` in production environments."
+  "Compute a hash of the contents. If the configuration key `:cacheable-urls?` is
+  `false`, the hash will be faster, but less accurate, as it will only use the
+  file path and mtime, and not the actual file contents for the hash, along with
+  the transformation configuration. Always set `:cacheable-urls?` to `true` in
+  production environments."
   [file-path transform {:keys [transformations cacheable-urls? resource-path]}]
-  (digest/sha-1
-   (str (pr-str (get transformations transform))
-        (if cacheable-urls?
-          (slurp (io/resource (str resource-path "/" file-path)))
-          (str resource-path "/" file-path)))))
+  (let [resource (io/resource (str resource-path "/" file-path))]
+    (digest/sha-1
+     (str (pr-str (get transformations transform))
+          (if cacheable-urls?
+            (slurp resource)
+            (str resource-path "/" file-path "/" (.lastModified (io/file resource))))))))
 
 (defn url-to
   "Given a config map, a keyword transform to apply, and the path to a
