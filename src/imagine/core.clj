@@ -256,7 +256,7 @@
   the transformation configuration. Always set `:cacheable-urls?` to `true` in
   production environments."
   [file-path transform {:keys [transformations cacheable-urls? resource-path]}]
-  (let [resource (io/resource (str resource-path "/" file-path))]
+  (let [resource (io/resource (.toString (Paths/get (or resource-path "") (into-array [file-path]))))]
     (digest/sha-1
      (str (pr-str (get transformations transform))
           (if cacheable-urls?

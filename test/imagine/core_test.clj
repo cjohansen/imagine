@@ -1,6 +1,6 @@
 (ns imagine.core-test
-  (:require [imagine.core :as sut]
-            [clojure.test :refer [deftest is testing]])
+  (:require [clojure.test :refer [deftest is testing]]
+            [imagine.core :as sut])
   (:import java.awt.image.BufferedImage))
 
 (defn image [w h]
@@ -191,40 +191,42 @@
 (deftest content-hash-test-should-be-idempotent
   (let [config {:transformations {:green-circle [[:crop {:width 200 :height 200}]
                                                  [:circle]]}}]
-    (is (= (sut/content-hash "image-1.jpg" :green-circle config)
-           (sut/content-hash "image-1.jpg" :green-circle config)))))
+    (is (= (sut/content-hash "sheep.jpg" :green-circle config)
+           (sut/content-hash "sheep.jpg" :green-circle config)))))
 
 (deftest content-hash-different-files-same-config
   (let [config {:transformations {:green-circle [[:crop {:width 200 :height 200}]
                                                  [:circle]]}}]
-    (is (not= (sut/content-hash "image-1.jpg" :green-circle config)
-              (sut/content-hash "image-2.jpg" :green-circle config)))))
+    (is (not= (sut/content-hash "sheep.jpg" :green-circle config)
+              (sut/content-hash "public/puffins.jpg" :green-circle config)))))
 
 (deftest content-hash-different-configs-same-file
   (let [config {:transformations {:green-circle [[:crop {:width 200 :height 200}]
-                                                 [:circle]]}}]
-    (is (not= (sut/content-hash "image-1.jpg" :green-circle config)
-              (sut/content-hash "image-1.jpg" :red-circle config)))))
+                                                 [:circle]]}
+                :resource-path "public"}]
+    (is (not= (sut/content-hash "puffins.jpg" :green-circle config)
+              (sut/content-hash "puffins.jpg" :red-circle config)))))
 
 (deftest url-to-circle-makes-pngs
   (is (= (-> {:transformations {:circle {:transformations
                                          [[:crop {:width 200 :height 200}]
                                           [:circle]]}}
-              :prefix "image-assets"}
-             (sut/url-to :circle "photos/myself.jpg"))
-         "/image-assets/circle/70d06474c6a0db878ed83b01b2b04e3c36692929/photos/myself.png")))
+              :prefix "image-assets"
+              :resource-path "public"}
+             (sut/url-to :circle "puffins.jpg"))
+         "/image-assets/circle/00aec1d254a3726800f1cd8469e8fc10de9df1e3/puffins.png")))
 
 (deftest url-to-keeps-jpg
   (is (= (-> {:transformations {:square [[:crop {:width 200 :height 200}]]}
               :prefix "image-assets"}
-             (sut/url-to :square "photos/myself.jpg"))
-         "/image-assets/square/cc9471e730e6b75fb68081b17b079254c0019c1c/photos/myself.jpg")))
+             (sut/url-to :square "sheep.jpg"))
+         "/image-assets/square/f4aee964b5331adab10e05565511670912c426c8/sheep.jpg")))
 
 (deftest realize-url-test
   (is (= (-> {:transformations {:square [[:crop {:width 200 :height 200}]]}
               :prefix "image-assets"}
-             (sut/realize-url "/square/photos/myself.jpg"))
-         "/image-assets/square/cc9471e730e6b75fb68081b17b079254c0019c1c/photos/myself.jpg")))
+             (sut/realize-url "/square/public/puffins.jpg"))
+         "/image-assets/square/c7298f11fdc6c8a43df3768e31cf7276bbc0d95d/public/puffins.jpg")))
 
 (deftest image-spec-test
   (is (= (sut/image-spec "/image-assets/square/80f3b0/photos/myself.jpg")
