@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>cjohansen</groupId>
   <artifactId>imagine</artifactId>
-  <version>2020.08.26</version>
+  <version>2020.08.27</version>
   <name>imagine</name>
   <dependencies>
     <dependency>
@@ -44,7 +44,7 @@
   <scm>
     <connection>scm:git:git://github.com/cjohansen/imagine.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/cjohansen/imagine.git</developerConnection>
-    <tag>v2020.08.26</tag>
+    <tag>v2020.08.27</tag>
     <url>https://github.com/cjohansen/imagine</url>
   </scm>
 </project>
