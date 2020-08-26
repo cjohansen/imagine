@@ -256,12 +256,18 @@
   the transformation configuration. Always set `:cacheable-urls?` to `true` in
   production environments."
   [file-path transform {:keys [transformations cacheable-urls? resource-path]}]
-  (let [resource (io/resource (.toString (Paths/get (or resource-path "") (into-array [file-path]))))]
-    (digest/sha-1
-     (str (pr-str (get transformations transform))
-          (if cacheable-urls?
-            (slurp resource)
-            (str resource-path "/" file-path "/" (.lastModified (io/file resource))))))))
+  (let [resource-path (.toString (Paths/get (or resource-path "") (into-array [file-path])))
+        resource (io/resource resource-path)]
+    (if (nil? resource)
+      (throw
+       (ex-info
+        (format "Failed to generate content-hash: image %s not found" resource-path)
+        {:image resource-path}))
+      (digest/sha-1
+       (str (pr-str (get transformations transform))
+            (if cacheable-urls?
+              (slurp resource)
+              (str resource-path "/" file-path "/" (.lastModified (io/file resource)))))))))
 
 (defn url-to
   "Given a config map, a keyword transform to apply, and the path to a
