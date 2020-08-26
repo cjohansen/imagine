@@ -221,10 +221,9 @@
                   (< (.getHeight image) max-h))
           (throw
            (ex-info
-            (format "Unable to transform image: transformations ask for dimensions %sx%s, :scale-up? is false, and image is %sx%s"
-                    max-w max-h (.getWidth image) (.getHeight image))
-            {:scale-width max-w
-             :scale-height max-h
+            "Transformation asks for dimensions larger than source image and :scale-up? is false"
+            {:transform-width max-w
+             :transform-height max-h
              :image-width (.getWidth image)
              :image-height (.getHeight image)})))))))
 
@@ -269,8 +268,16 @@
       (= :png ext) (util/save image file-path))))
 
 (defn transform-image-to-file [transformation file-path]
-  (-> (transform-image transformation)
-      (write-image transformation file-path)))
+  (try
+    (-> (transform-image transformation)
+        (write-image transformation file-path))
+    (catch clojure.lang.ExceptionInfo e
+      (throw (ex-info (format "Failed to transform %s to disk: %s"
+                              (some-> transformation :resource .getPath)
+                              (.getMessage e))
+                      (merge (ex-data e)
+                             {:file file-path}
+                             transformation))))))
 
 (defn content-hash
   "Compute a hash of the contents. If the configuration key `:cacheable-urls?` is
@@ -372,11 +379,22 @@
   "Prepare a Ring response for the image described by the request.
   Optionally caches the file on disk for better future performance."
   [req config]
-  (let [spec (inflate-spec (image-spec (:uri req)) config)]
+  (let [spec-data (image-spec (:uri req))
+        spec (inflate-spec spec-data config)]
     (when-not (and (get config :disk-cache?) (cached? spec))
-      (-> spec
-          transform-image
-          (write-image spec (:cache-path spec))))
+      (try
+        (-> spec
+            transform-image
+            (write-image spec (:cache-path spec)))
+        (catch clojure.lang.ExceptionInfo e
+          (throw (ex-info (format "Failed to serve %s with the %s transform: %s"
+                                  (some-> spec :resource .getPath)
+                                  (:transform spec-data)
+                                  (.getMessage e))
+                          (merge (ex-data e)
+                                 (select-keys spec [:transformations :ext])
+                                 spec-data
+                                 {:file (some-> spec :resource .getPath)}))))))
     (let [file (io/file (:cache-path spec))]
      {:status 200
       :headers {"last-modified" (last-modified file)}
