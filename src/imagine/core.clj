@@ -207,15 +207,38 @@
     image
     (collage/resize image :width width :height height)))
 
+(defn validate-transformation-image-size [image {:keys [transformations]}]
+  (let [crops (->> transformations
+                   (filter (comp #{:fit :crop} first))
+                   (map second)
+                   (remove (comp nil? :width))
+                   (remove :scale-up?)
+                   (map (juxt :width :height)))]
+    (when (seq crops)
+      (let [max-w (some->> crops (map first) (remove nil?) seq (apply max))
+            max-h (some->> crops (map second) (remove nil?) seq (apply min))]
+        (when (or (< (.getWidth image) max-w)
+                  (< (.getHeight image) max-h))
+          (throw
+           (ex-info
+            (format "Unable to transform image: transformations ask for dimensions %sx%s, :scale-up? is false, and image is %sx%s"
+                    max-w max-h (.getWidth image) (.getHeight image))
+            {:scale-width max-w
+             :scale-height max-h
+             :image-width (.getWidth image)
+             :image-height (.getHeight image)})))))))
+
 (defn transform-image
   "Transforms an image according to the transformation specs and returns
   a `BufferedImage`."
   [transformation-config]
-  (loop [image (util/load-image (:resource transformation-config))
-         [transformation & transformations] (:transformations transformation-config)]
-    (if transformation
-      (recur (apply transform (first transformation) image (rest transformation)) transformations)
-      (size-output transformation-config image))))
+  (let [image (util/load-image (:resource transformation-config))]
+    (validate-transformation-image-size image transformation-config)
+    (loop [image image
+           [transformation & transformations] (:transformations transformation-config)]
+      (if transformation
+        (recur (apply transform (first transformation) image (rest transformation)) transformations)
+        (size-output transformation-config image)))))
 
 (defn- get-ext [file-path transformations]
   (if (or (some #(= :circle (first %)) transformations)
@@ -414,9 +437,9 @@
 
 
   (-> {:transformations
-       [[:fit {:width 483 :height 400 :offset-y :top}]]
+       [[:fit {:width 983 :height 400 :offset-y :top}]]
        :ext :jpg
-       :resource (clojure.java.io/file "/Users/christian/Downloads/spaghetti.jpg")
+       :resource (clojure.java.io/file "/Users/christian/Downloads/3-Wednesday-Best.jpg")
        :cache-path "/tmp/spaghetti.jpg"}
       (transform-image-to-file "/tmp/fit.png"))
 
