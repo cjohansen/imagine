@@ -307,7 +307,7 @@
     (:height transformation) (update :height * 2)
     (< 200 (or (:width transformation)
                (:height transformation))) (assoc :progressive true)
-    :always (assoc :quality 0.3)))
+    :always (assoc :quality (get transformation :retina-quality 0.3))))
 
 (defn inflate-spec
   "Given a spec from `image-spec` and a config map, validate and inflate

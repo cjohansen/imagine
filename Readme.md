@@ -115,6 +115,7 @@ The transformation map can contain these keys:
 - `:retina-optimized?` - Encodes the recommendation from [this article on retina
   images](https://alidark.com/responsive-retina-image-mobile/) - double the
   image size and lower the quality setting to `0.3`. Only applies to JPGs.
+- `:retina-quality` - Optionally override the default retina quality of `0.3`.
 
 If neither `:width` nor `:height` is set, the output image is not resized. If
 either one is missing, the other is computed to maintain aspect ratio. It is
