@@ -11,13 +11,13 @@ ideal for client-side caching and a high-performant site.
 Install with tools.deps:
 
 ```clj
-cjohansen/imagine {:mvn/version "2020.08.27"}
+cjohansen/imagine {:mvn/version "2023.09.27"}
 ```
 
 Install with Leiningen:
 
 ```clj
-[cjohansen/imagine "2020.08.27"]
+[cjohansen/imagine "2023.09.27"]
 ```
 
 ## Using with Ring
@@ -291,7 +291,7 @@ image path that imagine can process.
 Returns a map with information about the image URL. The map contains the
 following keys:
 
-- `:transformation` - The name of the transformation config to apply
+- `:transform` - The name of the transformation config to apply
 - `:filename` - The image filename
 - `:ext` - The extension
 - `:url` - The input URL path
@@ -303,10 +303,9 @@ includes a resource pointing to the underlying image file. Regardless of the
 extension in the URL path, the file on disk may be either a JPG or a PNG. If
 both exist on disk, `imagine` throws an error.
 
-The returned map contains the keys.
+The returned map contains all the information from incoming `spec` in addition
+to these keys:
 
-- `transformation` - As above
-- `ext` - As above
 - `:resource` - A resource object pointing to the file on disk
 - `:cache-path` - A temporary path on the file system where a transformed image
   will be cached by the Ring handler
@@ -342,9 +341,19 @@ to the provided out directory at
 `<out-path>/image-assets/round/b234c32/some/file.png`. Creates all necessary
 diretories.
 
+### `(imagine.core/get-transformed-image inflated-spec config)`
+
+Given the `inflated-spec` (as produced by `inflate-spec`), returns the
+transformed `BufferedImage`.
+
+### `(imagine.core/get-image-from-url config url)`
+
+Given an image URL, returns the image (as per `get-transformed-image`) as a
+`BufferedImage`.
+
 ## License
 
-Copyright © 2019-2020 Christian Johansen
+Copyright © 2019-2023 Christian Johansen
 
 Distributed under the Eclipse Public License either version 1.0 or (at your
 option) any later version.

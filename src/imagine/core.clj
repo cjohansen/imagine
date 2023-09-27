@@ -360,7 +360,8 @@
         (throw (Exception. (format "Found both %s.jpg and %s.png, unable to select input. Please make sure there is only one file under this name" path path))))
       (when (and (nil? jpg-file) (nil? png-file))
         (throw (Exception. (format "Found neither %s.jpg nor %s.png, unable to select input." path path))))
-      (let [spec (merge (if (and (= :jpg ext) (:retina-optimized? transformation))
+      (let [spec (merge spec
+                        (if (and (= :jpg ext) (:retina-optimized? transformation))
                           (prepare-jpg-for-retina transformation)
                           transformation)
                         {:ext ext
@@ -375,30 +376,34 @@
       io/file
       .exists))
 
+(defn get-transformed-image [spec config]
+  (when-not (and (get config :disk-cache?) (cached? spec))
+    (try
+      (-> spec
+          transform-image
+          (write-image spec (:cache-path spec)))
+      (catch clojure.lang.ExceptionInfo e
+        (throw (ex-info (format "Failed to serve %s with the %s transform: %s"
+                                (some-> spec :resource .getPath)
+                                (:transform spec)
+                                (.getMessage e))
+                        (merge (ex-data e)
+                               (dissoc spec :resource)
+                               {:file (some-> spec :resource .getPath)}))))))
+  (io/file (:cache-path spec)))
+
+(defn get-image-from-url [config url]
+  (-> (inflate-spec (image-spec url) config)
+      (get-transformed-image config)))
+
 (defn serve-image
   "Prepare a Ring response for the image described by the request.
   Optionally caches the file on disk for better future performance."
   [req config]
-  (let [spec-data (image-spec (:uri req))
-        spec (inflate-spec spec-data config)]
-    (when-not (and (get config :disk-cache?) (cached? spec))
-      (try
-        (-> spec
-            transform-image
-            (write-image spec (:cache-path spec)))
-        (catch clojure.lang.ExceptionInfo e
-          (throw (ex-info (format "Failed to serve %s with the %s transform: %s"
-                                  (some-> spec :resource .getPath)
-                                  (:transform spec-data)
-                                  (.getMessage e))
-                          (merge (ex-data e)
-                                 (select-keys spec [:transformations :ext])
-                                 spec-data
-                                 {:file (some-> spec :resource .getPath)}))))))
-    (let [file (io/file (:cache-path spec))]
-     {:status 200
-      :headers {"last-modified" (last-modified file)}
-      :body file})))
+  (let [file (get-image-from-url config (:uri req))]
+    {:status 200
+     :headers {"last-modified" (last-modified file)}
+     :body file}))
 
 (defn image-url?
   "Returns true if the URL is a request for a transformed image - e.g.,
@@ -449,10 +454,12 @@
                               [:triangle :bottom-right]]
             :width 666}}})
 
-  (-> (image-spec "/image-assets/vertigo/_/references/petter-og-soheil.jpg")
-      (inflate-spec config)
-      #_(transform-image-to-file "/tmp/lol.png"))
+  (get-image-from-url config "/image-assets/vertigo/_/puffins.jpg")
 
+  (image-spec "/image-assets/vertigo/_/puffins.jpg")
+  (realize-url config "/vertigo/puffins.jpg")
+
+  (util/load-image (:resource spec))
 
   (-> {:transformations
        [[:fit {:width 983 :height 400 :offset-y :top}]]
@@ -460,7 +467,6 @@
        :resource (clojure.java.io/file "/Users/christian/Downloads/3-Wednesday-Best.jpg")
        :cache-path "/tmp/spaghetti.jpg"}
       (transform-image-to-file "/tmp/fit.png"))
-
 
   (-> {:transformations
        [[:crop {:preset :square}]
@@ -472,9 +478,6 @@
        :ext :jpg
        :resource (clojure.java.io/file "/Users/christian/Downloads/spaghetti.jpg")
        :cache-path "/tmp/spaghetti.jpg"}
-      (transform-image-to-file "/tmp/bruce-top.png"))
-
-  (->
       (transform-image-to-file "/tmp/bruce-top.png"))
 
   )
