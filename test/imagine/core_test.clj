@@ -214,19 +214,19 @@
               :prefix "image-assets"
               :resource-path "public"}
              (sut/url-to :circle "puffins.jpg"))
-         "/image-assets/circle/29a34e814f34360a7ef0a0e390ad923fc7be3129/puffins.png")))
+         "/image-assets/circle/0fb63968c2a2a30ac9d4a0e2d468947f741fa031/puffins.png")))
 
 (deftest url-to-keeps-jpg
   (is (= (-> {:transformations {:square [[:crop {:width 200 :height 200}]]}
               :prefix "image-assets"}
              (sut/url-to :square "sheep.jpg"))
-         "/image-assets/square/9bc5ba9e7c0ac2f7580d18a8abe6fd77b5b3c130/sheep.jpg")))
+         "/image-assets/square/5509e003d9ee39ee54fe379e3b49f559e779f53a/sheep.jpg")))
 
 (deftest realize-url-test
   (is (= (-> {:transformations {:square [[:crop {:width 200 :height 200}]]}
               :prefix "image-assets"}
              (sut/realize-url "/square/public/puffins.jpg"))
-         "/image-assets/square/9e3747f07a9918aee22f71a75e7765f29e4f046a/public/puffins.jpg")))
+         "/image-assets/square/a6a916d2c439e06b090f6577fb9eeeae010d96de/public/puffins.jpg")))
 
 (deftest image-spec-test
   (is (= (sut/image-spec "/image-assets/square/80f3b0/photos/myself.jpg")
