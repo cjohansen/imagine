@@ -409,7 +409,7 @@
   "Returns true if the URL is a request for a transformed image - e.g.,
   starts with the configured prefix."
   [url {:keys [prefix]}]
-  (= prefix (second (re-find path-re url))))
+  (and prefix (= prefix (second (re-find path-re url)))))
 
 (defn- image-req? [req asset-config]
   (and (= :get (:request-method req))
