@@ -113,7 +113,7 @@ The transformation map can contain these keys:
 - `:quality` - The JPG quality setting, from 0 to 1.
 - `:progressive?` - Whether the JPG should be progressive.
 - `:retina-optimized?` - Encodes the recommendation from [this article on retina
-  images](https://alidark.com/responsive-retina-image-mobile/) - double the
+  images](https://web.archive.org/web/20211024085032/https://alidark.com/responsive-retina-image-mobile/) - double the
   image size and lower the quality setting to `0.3`. Only applies to JPGs.
 - `:retina-quality` - Optionally override the default retina quality of `0.3`.
 
