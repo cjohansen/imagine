@@ -142,7 +142,7 @@ Options:
 - `:width` - The width to crop to, as an integer number of pixels. If not set,
   aspect ratio will be maintained, and `:width` is calculated from `:height`
 - `:height` - The height to crop to, as an integer number of pixels. If not set,
-  aspect ratio will be maintained, and `:height` is calculated from `:height`.
+  aspect ratio will be maintained, and `:height` is calculated from `:width`.
 - `:preset` - Can be set to `:square` to crop the image to, well, a square. The
   size of the image will be the smallest of width/height.
 - `:origin` - Set to a vector of keywords, specifying the x and y origin of the
